@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <title>庫存管理系統</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;700&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
+    <style>
+        body { font-family: 'Noto Sans TC', 'Microsoft JhengHei', Arial, sans-serif; background: #f8fafc; margin: 0; padding: 0; }
+        .header { display: flex; align-items: center; font-size: 2.6rem; font-weight: 700; padding: 32px 0 20px 0; justify-content: center; letter-spacing: 4px; color: #22223b; gap: 20px; }
+        .header img { width: 42px; margin-bottom: 5px; }
+        #main-container { display: flex; justify-content: center; gap: 48px; margin: 0 auto; max-width: 1200px; padding-bottom: 60px; }
+        .card { background: #fff; border-radius: 2rem; box-shadow: 0 4px 24px #0001; padding: 36px 38px 32px 38px; min-width: 330px; max-width: 370px; margin-top: 22px; display: flex; flex-direction: column; gap: 28px; }
+        .card h2 { font-size: 1.7rem; font-weight: 600; color: #22223b; margin-bottom: 12px; letter-spacing: 2px; margin-top: 0; }
+        input[type="file"], input[type="text"], input[type="number"] { font-size: 1.05rem; border-radius: 0.7rem; border: 1px solid #bfc1c8; padding: 7px 13px; margin-bottom: 10px; width: 90%; }
+        input[type="text"], input[type="number"] { background: #f8f8fa; }
+        button, .btn, input[type="submit"] { background: #3e63dd; color: #fff; font-weight: 600; border: none; padding: 11px 0; font-size: 1.14rem; border-radius: 1.2rem; box-shadow: 0 2px 12px #3e63dd20; width: 60%; margin: 12px auto 0 auto; display: block; cursor: pointer; transition: background 0.15s; }
+        button:hover, .btn:hover, input[type="submit"]:hover { background: #1a377b; }
+        label { font-size: 1.03rem; font-weight: 500; }
+        .upload-block, .upload-status { margin-bottom: 16px; }
+        .icon { font-size: 1.2em; vertical-align: middle; margin-right: 5px; }
+        .upload-status { color: #1a377b; font-size: 0.98rem; margin-left: 10px; }
+        .result-table { margin-top: 18px; width: 100%; border-collapse: separate; border-spacing: 0; background: #fff; box-shadow: 0 2px 12px #3e63dd10; border-radius: 1rem; overflow: hidden; }
+        .result-table th, .result-table td { white-space: nowrap; padding: 12px 24px; font-size: 1.09rem; border-bottom: 1px solid #e3e6f0; text-align: center; vertical-align: middle; min-width: 100px; }
+        .result-table th { background: #e4ebfa; color: #1a233a; font-weight: 700; font-size: 1.13rem; border-bottom: 2.5px solid #b4c5e4; letter-spacing: 2px; }
+        .result-table tr:nth-child(even) td { background: #f7fafd; }
+        .result-table tr:hover td { background: #dde7ff; transition: background 0.2s; }
+        .result-table td:nth-child(3), .result-table th:nth-child(3) { text-align: right; }
+        .result-table td:nth-child(2), .result-table th:nth-child(2) { text-align: left; }
+        .result-table th:first-child, .result-table td:first-child { border-left: none; }
+        .result-table th:last-child, .result-table td:last-child { border-right: none; }
+        .result-table tr:last-child td { border-bottom: none; }
+        @media (max-width: 1100px) { #main-container { flex-direction: column; align-items: center; gap: 32px; } .card { min-width: 90vw; max-width: 98vw; } }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <img src="https://cdn-icons-png.flaticon.com/512/263/263115.png" alt="logo" />
+        庫存管理系統
+    </div>
+    <div id="main-container">
+        <!-- 資料上傳卡片 -->
+        <div class="card">
+            <h2>資料上傳</h2>
+            <form id="upload-form">
+                <div class="upload-block">
+                    <span class="icon">⭐</span>
+                    <label for="file-inv">現有庫存：</label>
+                    <input type="file" id="file-inv" accept=".xlsx,.xlsm">
+                    <button type="button" onclick="uploadFile('庫存', 'file-inv')">上傳庫存</button>
+                    <span class="upload-status" id="status-inv"></span>
+                </div>
+                <div class="upload-block">
+                    <span class="icon">📍</span>
+                    <label for="file-out">出庫提醒：</label>
+                    <input type="file" id="file-out" accept=".xlsx,.xlsm">
+                    <button type="button" onclick="uploadFile('出庫提醒', 'file-out')">上傳出庫</button>
+                    <span class="upload-status" id="status-out"></span>
+                </div>
+                <div class="upload-block">
+                    <span class="icon">🤍</span>
+                    <label for="file-po">採購明細：</label>
+                    <input type="file" id="file-po" accept=".xlsx,.xlsm">
+                    <button type="button" onclick="uploadFile('採購單', 'file-po')">上傳採購</button>
+                    <span class="upload-status" id="status-po"></span>
+                </div>
+            </form>
+        </div>
+        <!-- 資料查詢卡片 -->
+        <div class="card">
+            <h2>資料查詢</h2>
+            <div>
+                <select id="query-type" style="font-size:1.1rem;padding:7px 12px;border-radius:0.7rem;">
+                    <option value="庫存">庫存</option>
+                    <option value="出庫提醒">出庫提醒</option>
+                    <option value="採購單">採購單</option>
+                </select>
+                <input type="text" id="search-key" placeholder="搜尋品號/品名/儲位">
+                <button type="button" onclick="queryData()">查詢</button>
+            </div>
+            <div id="query-result"></div>
+        </div>
+        <!-- 盤點卡片 (含條碼掃描) -->
+        <div class="card">
+            <h2>掃碼盤點</h2>
+            <div>
+                <label for="scan-code">輸入/掃描品號：</label>
+                <input type="text" id="scan-code" placeholder="請輸入或掃描品號">
+                <button type="button" onclick="searchProduct()">搜尋</button>
+                <button type="button" onclick="startScan()">📷 掃描</button>
+            </div>
+            <div id="reader" style="width:260px; display:none; margin-top:6px;"></div>
+            <div id="auto-fields" style="margin-top:10px;display:none;">
+                <div>品名：<span id="field-name"></span></div>
+                <div>現有庫存：<span id="field-stock"></span></div>
+                <div>儲位：<span id="field-location"></span></div>
+            </div>
+            <div id="manual-fields" style="margin-top:15px;display:none;">
+                <label for="scan-count">盤點數量：</label>
+                <input type="number" id="scan-count"><br>
+                <label for="scan-user">盤點人：</label>
+                <input type="text" id="scan-user" placeholder="請輸入盤點人"><br>
+                <div>盤點時間：<span id="scan-time"></span></div>
+                <label for="scan-note">備註：</label>
+                <input type="text" id="scan-note" placeholder="（可選）">
+                <div style="display:flex;gap:10px;margin-top:15px;">
+                    <button type="button" onclick="submitStocktake()">送出盤點</button>
+                    <button type="button" onclick="clearStocktake()">下一筆</button>
+                </div>
+                <div id="scan-status"></div>
+            </div>
+            <div style="margin-top:20px;">
+                <button type="button" onclick="downloadReport()" style="width:80%;">下載盤點差異報表</button>
+            </div>
+        </div>
+    </div>
+    <script>
+    // 資料上傳與查詢，原有不動
+    function uploadFile(type, fileId) {
+        const fileInput = document.getElementById(fileId);
+        const statusId = {
+            '庫存': 'status-inv',
+            '出庫提醒': 'status-out',
+            '採購單': 'status-po'
+        }[type];
+        const statusElem = document.getElementById(statusId);
+
+        if (!fileInput.files.length) {
+            statusElem.innerText = '請選擇檔案';
+            statusElem.style.color = 'red';
+            return;
+        }
+        const formData = new FormData();
+        formData.append('table_type', type);
+        formData.append('file', fileInput.files[0]);
+
+        fetch('/upload', {
+            method: 'POST',
+            body: formData
+        }).then(res => res.json())
+          .then(data => {
+            if (data.status === 'success') {
+                statusElem.innerText = '上傳成功！';
+                statusElem.style.color = 'green';
+            } else {
+                statusElem.innerText = data.error || '上傳失敗';
+                statusElem.style.color = 'red';
+            }
+        }).catch(err => {
+            statusElem.innerText = '上傳錯誤';
+            statusElem.style.color = 'red';
+        });
+    }
+    function queryData() {
+        const type = document.getElementById('query-type').value;
+        const key = document.getElementById('search-key').value.trim();
+        const resultElem = document.getElementById('query-result');
+        resultElem.innerHTML = '查詢中...';
+        fetch(`/query?table_type=${encodeURIComponent(type)}`)
+            .then(res => res.json())
+            .then(data => {
+                if (!data.records || data.records.length === 0) {
+                    resultElem.innerHTML = '<span style="color:gray;">查無資料</span>';
+                    return;
+                }
+                let records = data.records;
+                if (key) {
+                    const k = key.replace(/\s+/g,'');
+                    records = records.filter(row =>
+                        Object.values(row).join('').replace(/\s+/g,'').includes(k)
+                    );
+                }
+                if (!records.length) {
+                    resultElem.innerHTML = '<span style="color:gray;">查無資料</span>';
+                    return;
+                }
+                let html = '<div style="overflow-x:auto;"><table class="result-table"><thead><tr>';
+                data.columns.forEach(col => { html += `<th>${col}</th>`; });
+                html += '</tr></thead><tbody>';
+                records.forEach(row => {
+                    html += '<tr>';
+                    data.columns.forEach(col => {
+                        html += `<td>${row[col] || ''}</td>`;
+                    });
+                    html += '</tr>';
+                });
+                html += '</tbody></table></div>';
+                resultElem.innerHTML = html;
+            })
+            .catch(() => {
+                resultElem.innerHTML = '<span style="color:red;">查詢失敗</span>';
+            });
+    }
+
+    // 新盤點區塊
+    let lastProduct = null;
+    let scanner = null;
+
+    function startScan() {
+        document.getElementById('reader').style.display = '';
+        if (!scanner) {
+            scanner = new Html5Qrcode("reader");
+        }
+        scanner.start(
+            { facingMode: "environment" },
+            { fps: 10, qrbox: 180 },
+            qrCodeMessage => {
+                document.getElementById('scan-code').value = qrCodeMessage;
+                scanner.stop().then(() => {
+                    document.getElementById('reader').style.display = 'none';
+                    searchProduct();
+                });
+            },
+            errorMessage => {
+                // 可選：處理錯誤訊息
+            }
+        );
+    }
+
+    function submitStocktake() {
+        if (!lastProduct) return;
+        const count = document.getElementById('scan-count').value;
+        const user = document.getElementById('scan-user').value.trim();
+        if (!count || !user) {
+            document.getElementById('scan-status').innerText = '盤點數量與盤點人為必填';
+            document.getElementById('scan-status').style.color = 'red';
+            return;
+        }
+        const note = document.getElementById('scan-note').value;
+        fetch('/stocktake', {
+            method: 'POST',
+            headers: {'Content-Type':'application/json'},
+            body: JSON.stringify({
+                品號: lastProduct['貨品代號'],
+                品名: lastProduct['貨品名稱'],
+                儲位: lastProduct['儲位'],
+                現有庫存: lastProduct['及時庫存量'],
+                盤點數量: parseInt(count, 10),
+                盤點人: user,
+                備註: note
+            })
+        }).then(res => res.json())
+          .then(data => {
+            if (data.status === 'success') {
+                document.getElementById('scan-status').innerText = '✔️ 盤點成功';
+                document.getElementById('scan-status').style.color = 'green';
+            } else {
+                document.getElementById('scan-status').innerText = data.message || '盤點失敗';
+                document.getElementById('scan-status').style.color = 'red';
+            }
+          }).catch(() => {
+            document.getElementById('scan-status').innerText = '盤點送出失敗';
+            document.getElementById('scan-status').style.color = 'red';
+          });
+    }
+
+    function searchProduct() {
+        const code = document.getElementById('scan-code').value.trim();
+        if (!code) {
+            alert('請輸入品號');
+            return;
+        }
+        fetch(`/query?table_type=庫存`)
+            .then(res => res.json())
+            .then(data => {
+                const item = data.records.find(r => (r['貨品代號']+'').trim() === code);
+                if (!item) {
+                    document.getElementById('auto-fields').style.display = 'none';
+                    document.getElementById('manual-fields').style.display = 'none';
+                    alert('查無此品號！');
+                    return;
+                }
+                lastProduct = item;
+                document.getElementById('auto-fields').style.display = '';
+                document.getElementById('field-name').innerText = item['貨品名稱'];
+                document.getElementById('field-stock').innerText = item['及時庫存量'];
+                document.getElementById('field-location').innerText = item['儲位'];
+                document.getElementById('manual-fields').style.display = '';
+                document.getElementById('scan-count').value = '';
+                document.getElementById('scan-user').value = '';
+                document.getElementById('scan-note').value = '';
+                document.get
